@@ -1,0 +1,5 @@
+PySide6
+Cython
+setuptools
+pyinstaller
+pywin32
