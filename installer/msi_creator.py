@@ -101,7 +101,7 @@ class NSISInstallerCreator:
 
     def _get_main_executable(self):
         """Find the main executable file."""
-        # Look for executable with app name first
+        # Look for executable with crittr name first
         app_exe = self.app_dir / f"{self.app_name}.exe"
         if app_exe.exists():
             return app_exe.name

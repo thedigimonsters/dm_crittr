@@ -11,9 +11,9 @@ from app_config import APP_NAME, APP_VERSION, COMPANY_NAME, APP_UUID as PRODUCT_
 # Set to True to compile Cython modules
 COMPILE_CYTHON = True
 # Set to True to build the executable with PyInstaller
-BUILD_EXECUTABLE = True
+BUILD_EXECUTABLE = False
 # Set to True to create an installer package
-CREATE_INSTALLER = True
+CREATE_INSTALLER = False
 # Set to True to clean up build artifacts after completion
 CLEANUP_AFTER_BUILD = True
 # ============================================================
@@ -68,7 +68,7 @@ def cleanup():
                 os.remove(item_path)
                 print(f"Removed generated C source file: {item}")
             if item.endswith('.pyd'):
-                shutil.copy(item_path, os.path.join(ROOT_DIR, f"app/logic/{os.path.basename(item)}"))
+                shutil.copy(item_path, os.path.join(ROOT_DIR, f"crittr/logic/{os.path.basename(item)}"))
                 os.remove(item_path)
 
 
@@ -91,7 +91,7 @@ def build_executable():
             print(f"Working directory changed to: {ROOT_DIR}")
 
             # Just run PyInstaller with the spec file
-            PyInstaller.__main__.run(['app.spec', '--noconfirm'])
+            PyInstaller.__main__.run(['crittr.spec', '--noconfirm'])
         finally:
             # Restore the original working directory
             os.chdir(original_cwd)
