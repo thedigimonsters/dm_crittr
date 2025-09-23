@@ -40,6 +40,8 @@ class VideoBackendFFPyPlayer(QtCore.QObject):
         self._thread: Optional[threading.Thread] = None
         self._wall_start: float = 0.0
         self._pts0: Optional[float] = None
+        self._paused: bool = False
+        self._cond = threading.Condition()
         # Cache duration (seconds) from metadata if available
         self._duration: Optional[float] = None
         try:
@@ -150,15 +152,40 @@ class VideoBackendFFPyPlayer(QtCore.QObject):
             return
         self._log.info("Starting decode thread")
         self._running = True
+        self._paused = False
         self._pts0 = None
         self._wall_start = time.monotonic()
         self._thread = threading.Thread(target=self._loop, daemon=True, name="CrittrFFPyLoop")
         self._thread.start()
 
+    def pause(self):
+        """Pause decoding without tearing down the decode context/thread."""
+        with self._cond:
+            if not self._running:
+                return
+            self._paused = True
+
+    def resume(self):
+        """Resume decoding within the same thread/context."""
+        with self._cond:
+            if not self._running:
+                return
+            self._paused = False
+            self._cond.notify_all()
+
+    def is_running(self) -> bool:
+        return self._running
+
+    def is_paused(self) -> bool:
+        return self._paused
+
     def stop(self):
         """Stop decode loop, keep underlying player open so we can start again."""
         self._log.info("Stopping decode thread...")
-        self._running = False
+        with self._cond:
+            self._running = False
+            self._paused = False
+            self._cond.notify_all()
         t = self._thread
         self._thread = None
         if t and t.is_alive():
@@ -259,6 +286,12 @@ class VideoBackendFFPyPlayer(QtCore.QObject):
     def _loop(self):
         self._log.debug("Decode loop entered")
         while self._running:
+            # Cooperative pause with low-CPU wait
+            with self._cond:
+                while self._running and self._paused:
+                    self._cond.wait(timeout=0.1)
+                if not self._running:
+                    break
             try:
                 frame, val = self._player.get_frame()
             except Exception as ex:
