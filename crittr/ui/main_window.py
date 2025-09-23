@@ -6,6 +6,8 @@ from crittr.ui.player_widget import PlayerWidget
 from crittr.ui.notes_view import NotesPanel
 from crittr.ui.playlist_view import PlaylistView
 from crittr.ui.inspector_tabs import InspectorTabs
+from crittr.ui.timeline.view import TimelineView
+from crittr.ui.timeline.controller import TimelineController
 from app_config import APP_NAME, APP_PNG
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -19,21 +21,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.player = PlayerWidget(self)
         self.notes = NotesPanel(self)
-        self.playlist = PlaylistView(self)
+
         self.inspector = InspectorTabs(self)
 
-        # Wire signals as you like (e.g., keep notes in a controller)
-        # notes.notePosted.connect(...); player.frameChanged.connect(...)
+        # Timeline at the bottom
+        self._timeline_view = TimelineView(self)
+        self._timeline_ctrl = TimelineController(self._timeline_view, self)
 
         splitter = QtWidgets.QSplitter()
         left_col = QtWidgets.QWidget()
         left_layout = QtWidgets.QVBoxLayout(left_col)
         left_layout.addWidget(self.player, 1)
-        left_layout.addWidget(self.playlist, 0)
+        left_layout.addWidget(self._timeline_view, 0)
         splitter.addWidget(left_col)
         splitter.addWidget(self.inspector)
 
         self.setCentralWidget(splitter)
+
 
         self._build_menu()
         self._restore_state()
@@ -60,6 +64,15 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.settings.set("paths/last_open_dir", QtCore.QFileInfo(path).absolutePath())
         self.player.open(path)
+        # If player exposes controller and duration, wire the clock to the timeline controller
+        try:
+            self.player.controller.timeChanged.connect(self._timeline_ctrl.on_time_changed)
+            # Set duration when known
+            def _on_duration(d):
+                self._timeline_ctrl.set_duration(d)
+            self.player.controller.durationChanged.connect(_on_duration)
+        except Exception:
+            pass
 
     def _restore_state(self):
         # Example: restore window geometry
