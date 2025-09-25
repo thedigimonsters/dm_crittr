@@ -4,10 +4,7 @@ from crittr.qt import QtCore, QtGui, QtWidgets
 from crittr.core.config import get_settings
 from crittr.ui.player_widget import PlayerWidget
 from crittr.ui.notes_view import NotesPanel
-from crittr.ui.playlist_view import PlaylistView
 from crittr.ui.inspector_tabs import InspectorTabs
-from crittr.ui.timeline.view import TimelineView
-from crittr.ui.timeline.controller import TimelineController
 from app_config import APP_NAME, APP_PNG
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -25,8 +22,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.inspector = InspectorTabs(self)
 
         # Timeline at the bottom
-        self._timeline_view = TimelineView(self)
-        self._timeline_ctrl = TimelineController(self._timeline_view, self)
+        self._timeline_view = QtWidgets.QWidget()
 
         splitter = QtWidgets.QSplitter()
         left_col = QtWidgets.QWidget()
