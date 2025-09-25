@@ -40,11 +40,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self._build_menu()
         self._restore_state()
 
-
-        from crittr.ui.timeline.notes_tree import Layer, Note
-        layers = [Layer("L1", "Blocking"), Layer("L2", "Polish"), Layer("L3", "FX")]
-        self.inspector.notes_panel.tree.add_layer(layers[0], [Note("n1", "L1", 10, 20, "Example")])
-
     # Menu to open media
     def _build_menu(self):
         bar = self.menuBar()
@@ -132,6 +127,13 @@ class MainWindow(QtWidgets.QMainWindow):
         np.notePillDragging.connect(_on_pill_dragging)
         np.notePillDragFinished.connect(_on_pill_drag_finished)
 
+        # After wiring is in place, perform dev-mode seeding (auto-open + layers/notes)
+        try:
+            self._dev_seed_from_config()
+        except Exception:
+            pass
+
+
     def _restore_state(self):
         # Example: restore window geometry
         g = self.settings.get("ui/main_geometry")
@@ -141,3 +143,67 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, e: QtGui.QCloseEvent) -> None:
         self.settings.set("ui/main_geometry", self.saveGeometry())
         return super().closeEvent(e)
+
+    def _dev_seed_from_config(self) -> None:
+        """
+        Dev seeding and auto-open controlled by app_config:
+          - DEV_MODE: enable features when True
+          - DEV_STARTUP_MOV: absolute path to auto-open on startup ("" disables)
+          - DEV_LAYER: optional seed data (layers + notes)
+        """
+        from app_config import DEV_MODE, DEV_STARTUP_MOV, DEV_LAYER  # read contract from app_config
+        import os
+        if not DEV_MODE:
+            return
+
+        # 1) Auto-open video if configured and exists
+        mov = (DEV_STARTUP_MOV or "").strip()
+        if mov and os.path.isabs(mov) and os.path.exists(mov):
+            try:
+                self.player.open(mov)
+            except Exception:
+                pass
+
+        # 2) Seed layers/notes if provided
+        try:
+            npanel = getattr(self.inspector, "notes_panel", None)
+            if npanel is None:
+                return
+            tree = npanel.tree
+            if not DEV_LAYER:
+                return
+
+            from crittr.ui.timeline.notes_tree import Layer, Note  # reuse existing types
+            for L in DEV_LAYER:
+                # Extract layer fields with reasonable defaults
+                lid = str(L.get("id") or "").strip()
+                lname = str(L.get("name") or "Layer").strip()
+                color_hex = str(L.get("color") or "#8ab4f8").strip()
+                qcolor = QtGui.QColor(color_hex) if QtGui.QColor(color_hex).isValid() else QtGui.QColor("#8ab4f8")
+
+                notes_spec = L.get("notes") or []
+
+                # If layer id is provided, construct Layer explicitly so we preserve the id
+                if lid:
+                    layer_obj = Layer(lid, lname, True, False, qcolor)
+                    # Build Note objects bound to this layer id
+                    notes_objs = []
+                    for nd in notes_spec:
+                        nid = str(nd.get("id") or tree.alloc_note_id())
+                        s = float(nd.get("start_s") or 0.0)
+                        e = float(nd.get("end_s") or max(0.0, s + 2.0))
+                        txt = str(nd.get("text") or "")
+                        notes_objs.append(Note(nid, lid, s, e, txt))
+                    tree.add_layer(layer_obj, notes_objs)
+                else:
+                    # No explicit id → let tree allocate, then add notes individually
+                    new_lid = tree.add_layer_simple(lname, qcolor)
+                    for nd in notes_spec:
+                        nid = str(nd.get("id") or tree.alloc_note_id())
+                        s = float(nd.get("start_s") or 0.0)
+                        e = float(nd.get("end_s") or max(0.0, s + 2.0))
+                        txt = str(nd.get("text") or "")
+                        tree.add_note(new_lid, Note(nid, new_lid, s, e, txt))
+        except Exception:
+            pass
+

@@ -10,6 +10,28 @@ import sys
 import platform
 from pathlib import Path
 
+DEV_MODE = True
+DEV_STARTUP_MOV = r"R:\Digi\faceware_roms\Female_Performance_ROM_02.mov"
+DEV_LAYER = [
+    {
+        "id": "L1",
+        "name": "Blocking",
+        "color": "#8ab4f8",
+        "notes": [
+            {"id": "n1", "start_s": 10.0, "end_s": 12.0, "text": "Pose C timing"},
+        ],
+    },
+    {
+        "id": "L2",
+        "name": "Polish",
+        "color": "#80cbc4",
+        "notes": [
+            {"id": "n1", "start_s": 12.0, "end_s": 14.0, "text": "Pose D timing"},
+            {"id": "n2", "start_s": 15.0, "end_s": 16.0, "text": "Pose E timing"},
+        ],
+    }
+]
+
 # ───────────────────────────────────────────────────────────────────────────────
 # Core fields used by PyInstaller / MSI creator (keep names unchanged)
 # ───────────────────────────────────────────────────────────────────────────────
