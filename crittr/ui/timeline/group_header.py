@@ -2,12 +2,8 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 from crittr.qt import QtCore, QtGui, QtWidgets
+from crittr.ui.theme import Theme, NOTE_RAIL_COLOR
 
-NOTE_RAIL_COLOR = QtGui.QColor("#32363c")
-
-class Theme:
-    text        = QtGui.QColor("#d6d7d9")
-    panel_alt   = QtGui.QColor("#2c3036")
 
 class ClickLabel(QtWidgets.QLabel):
     clicked = QtCore.Signal()

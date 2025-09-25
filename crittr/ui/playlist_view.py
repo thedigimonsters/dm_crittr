@@ -7,13 +7,14 @@ class PlaylistView(QtWidgets.QListWidget):
 
     def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
+        from crittr.ui.theme import Theme
         self.setViewMode(QtWidgets.QListView.ViewMode.IconMode)
         self.setIconSize(QtCore.QSize(96, 54))
         self.setResizeMode(QtWidgets.QListView.ResizeMode.Adjust)
         self.setMovement(QtWidgets.QListView.Movement.Static)
         self.setMaximumHeight(90)
         self.setSpacing(8)
-        self.setStyleSheet("QListWidget { background: #1a1a1a; }")
+        self.setStyleSheet(f"QListWidget {{ background: {Theme.bg.name()}; }}")
         self.itemActivated.connect(self._emit_path)
         self.itemClicked.connect(self._emit_path)
 

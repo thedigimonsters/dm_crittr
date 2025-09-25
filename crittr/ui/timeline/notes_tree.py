@@ -4,7 +4,7 @@ from typing import Optional, List, Tuple, Dict
 
 from crittr.qt import QtCore, QtGui, QtWidgets
 from .note_card import NoteCard
-from .group_header import GroupHeaderWidget, Theme as HeaderTheme
+from .group_header import GroupHeaderWidget
 
 @dataclass
 class Note:

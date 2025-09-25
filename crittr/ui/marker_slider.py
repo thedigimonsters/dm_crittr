@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import List, Optional
 from crittr.qt import QtCore, QtGui, QtWidgets
+from crittr.ui.theme import Theme
+
 
 class MarkerSlider(QtWidgets.QSlider):
     """
@@ -34,7 +36,7 @@ class MarkerSlider(QtWidgets.QSlider):
             QtWidgets.QStyle.SubControl.SC_SliderGroove, self,
         )
         # Draw markers as small green ticks
-        p.setPen(QtGui.QPen(QtGui.QColor("#4CAF50"), 2))
+        p.setPen(QtGui.QPen(Theme.success, 2))
         span = max(1, self.maximum() - self.minimum())
         for f in self._markers:
             ratio = (f - self.minimum()) / span

@@ -2,21 +2,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional, Tuple
 import time
-
+from crittr.ui.theme import Theme, NOTE_RAIL_COLOR, GRIP_WIDTH_PX
 from crittr.qt import QtCore, QtGui, QtWidgets
 
-NOTE_RAIL_COLOR = QtGui.QColor("#32363c")
-GRIP_WIDTH_PX = 8
-
-class Theme:
-    bg          = QtGui.QColor("#1f2124")
-    panel       = QtGui.QColor("#26292e")
-    panel_alt   = QtGui.QColor("#2c3036")
-    stroke      = QtGui.QColor("#3a3f46")
-    text        = QtGui.QColor("#d6d7d9")
-    text_dim    = QtGui.QColor("#aab0b7")
-    accent      = QtGui.QColor("#3fb6ff")
-    accent_dim  = QtGui.QColor("#2a90cc")
 
 class NoteCard(QtWidgets.QWidget):
     activated  = QtCore.Signal(str, float, float, str)  # note_id, start, end, layer_id

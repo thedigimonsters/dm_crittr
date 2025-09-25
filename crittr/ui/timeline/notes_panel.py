@@ -3,10 +3,7 @@ from typing import List, Optional
 
 from crittr.qt import QtCore, QtGui, QtWidgets
 from .notes_tree import NotesTree, Note, Layer
-
-class Theme:
-    text        = QtGui.QColor("#d6d7d9")
-    panel_alt   = QtGui.QColor("#2c3036")
+from crittr.ui.theme import Theme  # ← use centralized Theme
 
 class _AddNoteDialog(QtWidgets.QDialog):
     """Collect group + note info from the user."""
