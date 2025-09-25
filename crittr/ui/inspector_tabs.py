@@ -7,7 +7,12 @@ class InspectorTabs(QtWidgets.QTabWidget):
         self.setMinimumWidth(300)
         self.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
         # Placeholder tabs you can replace later
-        self.addTab(self._placeholder("Notes panel (WIP)"), "Notes")
+        # self.addTab(self._placeholder("Notes panel (WIP)"), "Notes")
+        from crittr.ui.timeline import NotesPanel
+        # Expose the notes panel instance so MainWindow can wire it
+        self.notes_panel = NotesPanel(0.0, self)
+
+        self.addTab(self.notes_panel, "Notes")
         self.addTab(self._placeholder("Versions (WIP)"), "Versions")
         self.addTab(self._placeholder("Info (WIP)"), "Info")
 

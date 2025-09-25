@@ -3,7 +3,8 @@ from __future__ import annotations
 from crittr.qt import QtCore, QtGui, QtWidgets
 from crittr.core.config import get_settings
 from crittr.ui.player_widget import PlayerWidget
-from crittr.ui.notes_view import NotesPanel
+# from crittr.ui.notes_view import NotesPanel
+# from crittr.ui.timeline import NotesPanel
 from crittr.ui.inspector_tabs import InspectorTabs
 from app_config import APP_NAME, APP_PNG
 
@@ -17,26 +18,31 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings = get_settings()
 
         self.player = PlayerWidget(self)
-        self.notes = NotesPanel(self)
+        # Notes panel now lives inside InspectorTabs as the "Notes" tab
+        # self.notes = NotesPanel(0.0, self)
 
         self.inspector = InspectorTabs(self)
-
-        # Timeline at the bottom
-        self._timeline_view = QtWidgets.QWidget()
 
         splitter = QtWidgets.QSplitter()
         left_col = QtWidgets.QWidget()
         left_layout = QtWidgets.QVBoxLayout(left_col)
         left_layout.addWidget(self.player, 1)
-        left_layout.addWidget(self._timeline_view, 0)
+        # Left column no longer hosts Notes; it's in the right tabs
         splitter.addWidget(left_col)
         splitter.addWidget(self.inspector)
 
         self.setCentralWidget(splitter)
 
+        # Minimal timeline ↔ playback wiring (use the notes panel from InspectorTabs)
+        self._wire_timeline()
 
         self._build_menu()
         self._restore_state()
+
+
+        from crittr.ui.timeline.notes_tree import Layer, Note
+        layers = [Layer("L1", "Blocking"), Layer("L2", "Polish"), Layer("L3", "FX")]
+        self.inspector.notes_panel.tree.addLayer(layers[0], [Note("n1", "L1", 10, 20, "Example")])
 
     # Menu to open media
     def _build_menu(self):
@@ -60,15 +66,65 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         self.settings.set("paths/last_open_dir", QtCore.QFileInfo(path).absolutePath())
         self.player.open(path)
-        # If player exposes controller and duration, wire the clock to the timeline controller
-        try:
-            self.player.controller.timeChanged.connect(self._timeline_ctrl.on_time_changed)
-            # Set duration when known
-            def _on_duration(d):
-                self._timeline_ctrl.set_duration(d)
-            self.player.controller.durationChanged.connect(_on_duration)
-        except Exception:
-            pass
+        # Duration will be updated via controller signal wiring
+
+    def _wire_timeline(self):
+        np = getattr(self.inspector, "notes_panel", None)
+        if np is None:
+            return
+
+        # Update timeline duration when known
+        self.player.controller.durationChanged.connect(np.set_duration)
+
+        # Group header click → seek to group start (paused seek)
+        def _on_group_activated(layer_id: str, start_s: float, end_s: float):
+            try:
+                self.player.pause()
+            except Exception:
+                pass
+            try:
+                self.player.controller.seek_to_time(float(start_s))
+            except Exception:
+                pass
+
+        np.groupActivated.connect(_on_group_activated)
+
+        # Note activation → seek to note start (paused seek)
+        def _on_note_activated(note_id: str, start_s: float, end_s: float, layer_id: str):
+            try:
+                self.player.pause()
+            except Exception:
+                pass
+            try:
+                self.player.controller.seek_to_time(float(start_s))
+            except Exception:
+                pass
+
+        np.noteActivated.connect(_on_note_activated)
+
+        # Pill scrubbing hooks
+        def _on_pill_drag_started(note_id: str, s: float, e: float):
+            try:
+                self.player.pause()
+            except Exception:
+                pass
+
+        def _on_pill_dragging(note_id: str, s: float, e: float, preview_t: float):
+            try:
+                self.player.controller.preview_frame_at(float(preview_t))
+            except Exception:
+                pass
+
+        def _on_pill_drag_finished(note_id: str, s: float, e: float, commit: bool):
+            center = 0.5 * (float(s) + float(e))
+            try:
+                self.player.controller.seek_to_time(center)
+            except Exception:
+                pass
+
+        np.notePillDragStarted.connect(_on_pill_drag_started)
+        np.notePillDragging.connect(_on_pill_dragging)
+        np.notePillDragFinished.connect(_on_pill_drag_finished)
 
     def _restore_state(self):
         # Example: restore window geometry
