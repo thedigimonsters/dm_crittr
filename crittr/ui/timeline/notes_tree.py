@@ -48,6 +48,7 @@ class NotesTree(QtWidgets.QTreeWidget):
     noteOpenDetailRequested = QtCore.Signal(str)
 
     selectionChangedSig = QtCore.Signal(list, object)
+    addNoteRequested = QtCore.Signal(str)  # layer_id where the add was requested
 
     def __init__(self, duration_s: float, parent=None):
         super().__init__(parent)
@@ -264,6 +265,7 @@ class NotesTree(QtWidgets.QTreeWidget):
 
     def _emit_add_note(self, layer_id: str):
         self.selectionChangedSig.emit([], layer_id)
+        self.addNoteRequested.emit(layer_id)
 
     def _open_group_menu(self, layer_id: str, at_global_pos: QtCore.QPoint):
         self.groupMenuRequested.emit(layer_id, at_global_pos)

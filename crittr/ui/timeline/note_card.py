@@ -134,7 +134,10 @@ class NoteCard(QtWidgets.QWidget):
 
         title_r, sub_r = self._text_rects()
         fm = self.fontMetrics()
-        title = self.note.text.splitlines()[0] or "(note)"
+        # Robustly extract first line of text; handle empty/None safely
+        lines = str(getattr(self.note, "text", "") or "").splitlines()
+        title_src = (lines[0] if lines else "").strip()
+        title = title_src if title_src else "(note)"
         title = fm.elidedText(title, QtCore.Qt.ElideRight, title_r.width())
         p.setPen(Theme.text_dim if self.locked else Theme.text)
         p.drawText(title_r, QtCore.Qt.AlignVCenter, title)

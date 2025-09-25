@@ -93,10 +93,12 @@ class NotesPanel(QtWidgets.QWidget):
     noteOpenDetailRequested = QtCore.Signal(str)
 
     selectionChangedSig = QtCore.Signal(list, object)
+    addNoteRequested = QtCore.Signal(str)  # bubble up layer_id for header "+ Note"
 
     def __init__(self, duration_s: float, parent=None):
         super().__init__(parent)
-        v = QtWidgets.QVBoxLayout(self); v.setContentsMargins(0,0,0,0); v.setSpacing(0)
+        v = QtWidgets.QVBoxLayout(self);
+        v.setContentsMargins(0,0,0,0); v.setSpacing(0)
 
         tb = QtWidgets.QWidget(); tb.setStyleSheet(f"background:{Theme.panel_alt.name()};")
         tl = QtWidgets.QHBoxLayout(tb); tl.setContentsMargins(8,6,8,6)
@@ -107,6 +109,7 @@ class NotesPanel(QtWidgets.QWidget):
         v.addWidget(tb)
 
         self.tree = NotesTree(duration_s); v.addWidget(self.tree, 1)
+        self._current_time: float = 0.0
 
         self.tree.groupActivated.connect(self.groupActivated)
         self.tree.groupMenuRequested.connect(self.groupMenuRequested)
@@ -130,6 +133,7 @@ class NotesPanel(QtWidgets.QWidget):
         self.tree.noteOpenDetailRequested.connect(self.noteOpenDetailRequested)
 
         self.tree.selectionChangedSig.connect(self.selectionChangedSig)
+        self.tree.addNoteRequested.connect(self.addNoteRequested)
 
         add_btn.clicked.connect(self._toolbar_add)
 
@@ -165,9 +169,13 @@ class NotesPanel(QtWidgets.QWidget):
             txt_parts.append(note_body)
         note_text = "\n".join(txt_parts)
 
-        # Create note with default range (0–2s). Later phases can center at current time.
+        # Create note centered at current time (default 2s window, clamped to duration)
+        duration_s = float(self.tree.duration_s)
+        start = max(0.0, min(float(self._current_time), max(0.0, duration_s - 0.5)))
+        end = min(duration_s, start + 2.0)
+
         nid = self.tree.alloc_note_id()
-        new_note = Note(id=nid, layer_id=lid, start_s=0.0, end_s=2.0, text=note_text)
+        new_note = Note(id=nid, layer_id=lid, start_s=start, end_s=end, text=note_text)
         self.tree.add_note(lid, new_note)
 
         # Select the new note and emit selection
@@ -182,3 +190,7 @@ class NotesPanel(QtWidgets.QWidget):
 
     def add_layer(self, layer: Layer, notes: List[Note]):
         self.tree.add_layer(layer, notes)
+
+    def set_current_time(self, seconds: float) -> None:
+        """Public API: update the panel's notion of current player PTS (seconds)."""
+        self._current_time = max(0.0, float(seconds))

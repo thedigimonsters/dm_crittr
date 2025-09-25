@@ -1,3 +1,3 @@
 from .notes_panel import NotesPanel
-
-__all__ = ["NotesPanel"]
+from .notes_controller import NotesController
+__all__ = ["NotesPanel", "NotesController"]

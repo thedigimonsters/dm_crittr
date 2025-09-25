@@ -146,7 +146,7 @@ class PlayerWidget(QtWidgets.QWidget):
     def play(self) -> None:
         self._log.info("play() pressed")
         if self.is_playing:
-            self._log.info("play() ignored: player=%s, is_playing=%s", bool(self.video_player), self.is_playing)
+            self._log.info("play() ignored: is_playing=%s", self.is_playing)
             return
         self.controller.play()
         self.is_playing = True
@@ -156,12 +156,13 @@ class PlayerWidget(QtWidgets.QWidget):
     def pause(self) -> None:
         self._log.info("pause() pressed")
         if not self.is_playing:
-            self._log.info("pause() ignored: player=%s, is_playing=%s", bool(self.video_player), self.is_playing)
+            self._log.info("pause() ignored: is_playing=%s", self.is_playing)
             return
         self.controller.pause()
         self.is_playing = False
         self.play_btn.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay))
         self.playStateChanged.emit(False)
+
 
     def _toggle_play(self) -> None:
         if self.is_playing:
@@ -224,6 +225,34 @@ class PlayerWidget(QtWidgets.QWidget):
         self.is_playing = False
         self.play_btn.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay))
         self.mediaEnded.emit()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # Thin adapter to match assumed Player API
+    # ──────────────────────────────────────────────────────────────────────────
+    def resume(self) -> None:
+        self.play()
+
+    def seek(self, seconds: float) -> None:
+        """Precise seek and remain paused."""
+        got = self.controller.seek_to_time(float(seconds))
+        if got is not None:
+            self._last_pts = got[1]
+            self._update_time_labels_from_pts(self._last_pts)
+            # ensure UI reflects paused state
+            self.is_playing = False
+            self.play_btn.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay))
+            self.playStateChanged.emit(False)
+
+    def preview(self, seconds: float) -> None:
+        """Fast preview frame for scrubbing; does not change play state."""
+        rgb = self.controller.preview_frame_at(float(seconds))
+        if rgb is not None:
+            self._last_pts = float(seconds)
+            self._update_time_labels_from_pts(self._last_pts)
+
+    def get_duration_seconds(self) -> float:
+        """Current known media duration in seconds (0.0 if unknown)."""
+        return float(self._duration_s)
 
     def _on_slider_changed(self, value: int) -> None:
         self._log.debug("_on_slider_changed: %d", value)

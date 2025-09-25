@@ -7,6 +7,7 @@ from crittr.ui.player_widget import PlayerWidget
 # from crittr.ui.timeline import NotesPanel
 from crittr.ui.inspector_tabs import InspectorTabs
 from app_config import APP_NAME, APP_PNG
+from crittr.ui.timeline.notes_controller import NotesController
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -75,6 +76,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Update timeline duration when known
         self.player.controller.durationChanged.connect(np.set_duration)
+        # Forward current player time (seconds PTS) to notes panel
+        self.player.controller.timeChanged.connect(np.set_current_time)
+
+        # Bridge notes panel signals to player via controller to decouple UI from playback
+        self.notes_controller = NotesController(self.player, np)
 
         # Group header click → seek to group start (paused seek)
         def _on_group_activated(layer_id: str, start_s: float, end_s: float):
