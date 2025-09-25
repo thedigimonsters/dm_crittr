@@ -85,7 +85,7 @@ class NotesTree(QtWidgets.QTreeWidget):
                     w.setDuration(self.duration_s)
         self.viewport().update()
 
-    def addLayer(self, layer: Layer, notes: List[Note]):
+    def add_layer(self, layer: Layer, notes: List[Note]):
         header_item = QtWidgets.QTreeWidgetItem(self)
         header_item.setFirstColumnSpanned(True)
         header_item.setData(0, QtCore.Qt.UserRole, ("layer", layer.id))
@@ -134,7 +134,7 @@ class NotesTree(QtWidgets.QTreeWidget):
         """Create a new layer with no notes and return its id."""
         lid = self._alloc_layer_id(name)
         layer = Layer(lid, name.strip() or "Layer", True, False, color if color.isValid() else QtGui.QColor("#8ab4f8"))
-        self.addLayer(layer, [])
+        self.add_layer(layer, [])
         return lid
 
     def add_note(self, layer_id: str, note: Note) -> None:

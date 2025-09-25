@@ -181,4 +181,4 @@ class NotesPanel(QtWidgets.QWidget):
             pass
 
     def add_layer(self, layer: Layer, notes: List[Note]):
-        self.tree.addLayer(layer, notes)
+        self.tree.add_layer(layer, notes)

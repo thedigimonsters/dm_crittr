@@ -42,7 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         from crittr.ui.timeline.notes_tree import Layer, Note
         layers = [Layer("L1", "Blocking"), Layer("L2", "Polish"), Layer("L3", "FX")]
-        self.inspector.notes_panel.tree.addLayer(layers[0], [Note("n1", "L1", 10, 20, "Example")])
+        self.inspector.notes_panel.tree.add_layer(layers[0], [Note("n1", "L1", 10, 20, "Example")])
 
     # Menu to open media
     def _build_menu(self):
