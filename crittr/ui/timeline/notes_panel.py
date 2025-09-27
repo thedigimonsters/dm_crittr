@@ -4,6 +4,7 @@ from typing import List, Optional
 from crittr.qt import QtCore, QtGui, QtWidgets
 from .notes_tree import NotesTree, Note, Layer
 from crittr.ui.theme import Theme  # ← use centralized Theme
+import time  # add for simple debounce timing
 
 class _AddNoteDialog(QtWidgets.QDialog):
     """Collect group + note info from the user."""
@@ -91,6 +92,7 @@ class NotesPanel(QtWidgets.QWidget):
 
     selectionChangedSig = QtCore.Signal(list, object)
     addNoteRequested = QtCore.Signal(str)  # bubble up layer_id for header "+ Note"
+    globalInteractionChanged = QtCore.Signal(bool)  # new: emitted when global interaction toggles
 
     def __init__(self, duration_s: float, parent=None):
         super().__init__(parent)
@@ -107,6 +109,8 @@ class NotesPanel(QtWidgets.QWidget):
 
         self.tree = NotesTree(duration_s); v.addWidget(self.tree, 1)
         self._current_time: float = 0.0
+        self._global_interaction: bool = False
+        self._suppress_until_ms: float = 0.01  # debounce window against accidental re-activation
 
         self.tree.groupActivated.connect(self.groupActivated)
         self.tree.groupMenuRequested.connect(self.groupMenuRequested)
@@ -116,7 +120,9 @@ class NotesPanel(QtWidgets.QWidget):
         self.tree.groupVisibilityChanged.connect(self.groupVisibilityChanged)
         self.tree.groupLockChanged.connect(self.groupLockChanged)
 
-        self.tree.noteActivated.connect(self.noteActivated)
+        # Gate note activation through a local handler
+        # (prevents bouncing back to a note when using the global slider)
+        self.tree.noteActivated.connect(self._on_note_activated)
         self.tree.noteEditRequested.connect(self.noteEditRequested)
         self.tree.noteDeleteRequested.connect(self.noteDeleteRequested)
         self.tree.noteDuplicateRequested.connect(self.noteDuplicateRequested)
@@ -191,3 +197,34 @@ class NotesPanel(QtWidgets.QWidget):
     def set_current_time(self, seconds: float) -> None:
         """Public API: update the panel's notion of current player PTS (seconds)."""
         self._current_time = max(0.0, float(seconds))
+
+    # Compatibility alias if other code calls camelCase
+    def setCurrentTime(self, seconds: float) -> None:
+        self.set_current_time(seconds)
+
+    def setGlobalInteraction(self, on: bool) -> None:
+        """Called while the global player slider is being used."""
+        self._global_interaction = bool(on)
+        if hasattr(self.tree, "setGlobalInteraction"):
+            try:
+                self.tree.setGlobalInteraction(self._global_interaction)
+            except Exception:
+                pass
+        self.globalInteractionChanged.emit(self._global_interaction)
+
+    def clearSelection(self) -> None:
+        """Clear any selected note(s) in the notes tree."""
+        try:
+            if hasattr(self.tree, "clearSelection"):
+                self.tree.clearSelection()
+            self.selectionChangedSig.emit([], None)
+        except Exception:
+            pass
+
+    # Local guard that forwards note activation only when appropriate
+    def _on_note_activated(self, note_id: str, start_s: float, end_s: float, layer_id: str) -> None:
+        now_ms = time.monotonic() * 1000.0
+        if self._global_interaction or now_ms < self._suppress_until_ms:
+            # Suppress while scrubbing or inside debounce window
+            return
+        self.noteActivated.emit(note_id, start_s, end_s, layer_id)

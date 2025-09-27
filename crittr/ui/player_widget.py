@@ -205,6 +205,9 @@ class PlayerWidget(QtWidgets.QWidget):
     @QtCore.Slot(float)
     def _on_time_changed(self, pts_s: float) -> None:
         """Keep the slider in sync with canonical time (ms)."""
+        # If the user is scrubbing, ignore external time updates to prevent bounce-back.
+        if getattr(self, "_is_scrubbing", False):
+            return
         v = pts_to_ms(pts_s)
         # Auto-grow only while duration is unknown
         if not self._duration_known and v > self.timeline.maximum():
@@ -286,20 +289,25 @@ class PlayerWidget(QtWidgets.QWidget):
 
     def _on_slider_released(self) -> None:
         self._log.debug("Slider released: commit seek")
-        self._is_scrubbing = False
-        # Commit final seek to backend at the slider's current time
-        val = self.timeline.value()
-        secs = ms_to_pts(val)
-        got = self.controller.seek_to_time(secs)
-        if got is not None:
-            arr, pts = got
-            self._last_pts = pts
-            self.frame_view.set_frame(arr)
-            self._update_time_labels_from_pts(pts)
-            # Leave paused after scrubbing; user can hit play
-            self.is_playing = False
-            self.play_btn.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay))
-            self.playStateChanged.emit(False)
+        # Keep scrubbing ON during commit to block any stale timeChanged from reverting the slider.
+        try:
+            # Commit final seek to backend at the slider's current time
+            val = self.timeline.value()
+            secs = ms_to_pts(val)
+            got = self.controller.seek_to_time(secs)
+            if got is not None:
+                arr, pts = got
+                self._last_pts = pts
+                self.frame_view.set_frame(arr)
+                self._update_time_labels_from_pts(pts)
+                # Leave paused after scrubbing; user can hit play
+                self.is_playing = False
+                self.play_btn.setIcon(self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay))
+                self.playStateChanged.emit(False)
+        finally:
+            # Only now consider scrubbing finished so subsequent timeChanged can sync UI.
+            self._is_scrubbing = False
+
 
     def _goto_start(self) -> None:
         """Jump to the start of the clip."""

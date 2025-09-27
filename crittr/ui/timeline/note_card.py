@@ -188,11 +188,9 @@ class NoteCard(QtWidgets.QWidget):
             if e.button() == QtCore.Qt.LeftButton:
                 self.activated.emit(self.note.id, self.note.start_s, self.note.end_s, self.note.layer_id)
             return
-        if e.button() == QtCore.Qt.RightButton:
-            self._open_context_menu(e.globalPosition().toPoint())
-            return
+        # Remove special RMB handling; let Qt deliver contextMenuEvent
         hit = self._hit(e.position().toPoint())
-        if hit:
+        if hit and e.button() == QtCore.Qt.LeftButton:
             self._drag_mode = hit
             self._orig = (self.note.start_s, self.note.end_s)
             self._last_emit_ms = 0.0
@@ -255,7 +253,8 @@ class NoteCard(QtWidgets.QWidget):
             return
         super().mouseReleaseEvent(e)
 
-    def _open_context_menu(self, global_pos: QtCore.QPoint):
+    # single RMB context menu including drawing actions
+    def contextMenuEvent(self, e: QtGui.QContextMenuEvent) -> None:
         m = QtWidgets.QMenu(self)
         act_edit = m.addAction("Edit Note…")
         act_dup  = m.addAction("Duplicate Note")
@@ -264,19 +263,29 @@ class NoteCard(QtWidgets.QWidget):
         act_add  = m.addAction("Add/Replace Drawing…")
         act_clr  = m.addAction("Clear Drawing")
         act_opc  = m.addAction("Set Drawing Opacity…")
+        m.addSeparator()
+        act_det  = m.addAction("Open Detail Editor…")
 
-        for a in (act_edit, act_dup, act_del, act_add, act_clr, act_opc):
-            a.setEnabled(not self.locked)
+        for a in (act_edit, act_dup, act_del, act_add, act_clr, act_opc, act_det):
+            a.setEnabled(not self.locked)  # keep enabled state when not locked
 
-        chosen = m.exec(global_pos)
+        chosen = m.exec(e.globalPos())
         if not chosen:
             return
-        if chosen is act_edit: self.editRequested.emit(self.note.id)
-        elif chosen is act_dup: self.duplicateRequested.emit(self.note.id)
-        elif chosen is act_del: self.deleteRequested.emit(self.note.id)
-        elif chosen is act_add: self.drawingAddRequested.emit(self.note.id)
-        elif chosen is act_clr: self.drawingClearRequested.emit(self.note.id)
-        elif chosen is act_opc: self._ask_opacity()
+        if chosen is act_edit:
+            self.editRequested.emit(self.note.id)
+        elif chosen is act_dup:
+            self.duplicateRequested.emit(self.note.id)
+        elif chosen is act_del:
+            self.deleteRequested.emit(self.note.id)
+        elif chosen is act_add:
+            self.drawingAddRequested.emit(self.note.id)
+        elif chosen is act_clr:
+            self.drawingClearRequested.emit(self.note.id)
+        elif chosen is act_opc:
+            self._ask_opacity()
+        elif chosen is act_det:
+            self.openDetailRequested.emit(self.note.id)
 
     def _ask_opacity(self):
         if self.locked:

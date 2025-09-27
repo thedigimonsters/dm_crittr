@@ -64,6 +64,7 @@ class NotesTree(QtWidgets.QTreeWidget):
         self._layer_headers: Dict[str, GroupHeaderWidget] = {}
         self._notes_by_layer: Dict[str, List[Note]] = {}
         self._note_id_counter = 0
+        self._global_interaction: bool = False  # new: gate snapping while global scrub is active
 
     def set_duration(self, duration_s: float) -> None:
         """Update duration for all visuals (headers, cards)."""
@@ -315,3 +316,38 @@ class NotesTree(QtWidgets.QTreeWidget):
             new_state = not is_visible
             if hdr: hdr.eye.setChecked(new_state)
             self.groupVisibilityChanged.emit(layer_id, new_state)
+
+    # ───────────────────────────────────────────────────────────────────
+    # Helpers for global interaction and selection
+    # ───────────────────────────────────────────────────────────────────
+    def setGlobalInteraction(self, on: bool) -> None:
+        """Gate any snapping/ensure-visible when global slider is in use."""
+        self._global_interaction = bool(on)
+
+    def clearSelection(self) -> None:
+        """Clear visual selection on all NoteCards and the tree selection model."""
+        for i in range(self.topLevelItemCount()):
+            parent = self.topLevelItem(i)
+            for r in range(parent.childCount()):
+                it = parent.child(r)
+                w = self.itemWidget(it, 0)
+                if isinstance(w, NoteCard):
+                    w.setSelected(False)
+        QtWidgets.QTreeWidget.clearSelection(self)
+
+    def firstLayerId(self) -> Optional[str]:
+        if not self._layer_items:
+            return None
+        for lid in self._layer_items.keys():
+            return lid
+        return None
+
+    def selectNote(self, note_id: str) -> None:
+        for i in range(self.topLevelItemCount()):
+            parent = self.topLevelItem(i)
+            for r in range(parent.childCount()):
+                it = parent.child(r)
+                w = self.itemWidget(it, 0)
+                if isinstance(w, NoteCard):
+                    w.setSelected(w.note.id == note_id)
+        self.selectionChangedSig.emit([note_id], None)

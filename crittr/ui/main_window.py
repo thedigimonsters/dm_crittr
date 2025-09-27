@@ -133,6 +133,16 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception:
             pass
 
+        # Hook global slider interactions to avoid competition with note timelines:
+        try:
+            tl = getattr(self.player, "timeline", None)
+            if tl is not None:
+                tl.sliderPressed.connect(lambda: (np.setGlobalInteraction(True), np.clearSelection()))
+                tl.sliderMoved.connect(lambda _v: (np.setGlobalInteraction(True), np.clearSelection()))
+                tl.sliderReleased.connect(lambda: np.setGlobalInteraction(False))
+        except Exception:
+            pass
+
 
     def _restore_state(self):
         # Example: restore window geometry

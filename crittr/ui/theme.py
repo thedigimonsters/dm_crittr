@@ -14,6 +14,9 @@ class Theme:
     accent      = QtGui.QColor("#3fb6ff")
     accent_dim  = QtGui.QColor("#2a90cc")
     success     = QtGui.QColor("#4caf50")
+    icon_idle   = QtGui.QColor("#bfc5cc")
+    icon_hover  = QtGui.QColor("#e3e6ea")
+    danger      = QtGui.QColor("#e57373")  # for destructive menu items
     chip_colors = [
         QtGui.QColor("#8ab4f8"),
         QtGui.QColor("#f28b82"),
@@ -21,6 +24,9 @@ class Theme:
         QtGui.QColor("#fdd663"),
         QtGui.QColor("#cf93d9"),
     ]
+
+def qcolor_hex(c: QtGui.QColor) -> str:
+    return c.name(QtGui.QColor.HexRgb)
 
 def apply_fusion_theme(app: QtWidgets.QApplication) -> None:
     app.setStyle("Fusion")

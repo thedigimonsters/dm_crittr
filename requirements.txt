@@ -6,3 +6,4 @@ pywin32
 ffpyplayer
 numpy
 opencv-python
+qtawesome>=1.2.3
