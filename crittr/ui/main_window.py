@@ -13,7 +13,6 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(APP_NAME)
-        print(APP_PNG)
         self.setWindowIcon(QtGui.QIcon(APP_PNG))
         self.resize(1200, 720)
         self.settings = get_settings()

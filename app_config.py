@@ -26,8 +26,8 @@ DEV_LAYER = [
         "name": "Polish",
         "color": "#80cbc4",
         "notes": [
-            {"id": "n1", "start_s": 12.0, "end_s": 14.0, "text": "Pose D timing"},
-            {"id": "n2", "start_s": 15.0, "end_s": 16.0, "text": "Pose E timing"},
+            {"id": "n1a", "start_s": 12.0, "end_s": 14.0, "text": "Pose D timing"},
+            {"id": "n2b", "start_s": 15.0, "end_s": 16.0, "text": "Pose E timing"},
         ],
     }
 ]

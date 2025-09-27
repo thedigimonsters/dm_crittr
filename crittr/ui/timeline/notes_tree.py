@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple, Dict
 from crittr.qt import QtCore, QtGui, QtWidgets
 from .note_card import NoteCard
 from .group_header import GroupHeaderWidget
+from crittr.core.logging import get_logger
 
 @dataclass
 class Note:
@@ -58,6 +59,8 @@ class NotesTree(QtWidgets.QTreeWidget):
         self.setVerticalScrollMode(QtWidgets.QAbstractItemView.ScrollPerPixel)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setStyleSheet("QTreeWidget { background: #26292e; border: 0; }")
+
+        self.logger = get_logger("crittr.ui.timeline.notes_tree")
 
         self.duration_s = max(0.001, float(duration_s))
         self._layer_items: Dict[str, QtWidgets.QTreeWidgetItem] = {}
@@ -204,6 +207,12 @@ class NotesTree(QtWidgets.QTreeWidget):
                 if any(n.id == nid for n in notes):
                     layer_id = L
                     break
+
+        # NEW: make the owning header 'active' when a note is selected
+        self._set_active_layer(layer_id)
+        if layer_id is not None:
+            self.logger.info(f"note-select → active layer = {layer_id}")
+
         self.selectionChangedSig.emit(selected_ids, layer_id)
 
     def setLayerLocked(self, layer_id: str, locked: bool):
@@ -243,7 +252,6 @@ class NotesTree(QtWidgets.QTreeWidget):
         """Forward draw-clear request from a NoteCard."""
         self.noteDrawingClearRequested.emit(note_id)
 
-
     def _compute_layer_range(self, layer_id: str) -> Tuple[Optional[float], Optional[float]]:
         notes = self._notes_by_layer.get(layer_id) or []
         if not notes:
@@ -251,6 +259,11 @@ class NotesTree(QtWidgets.QTreeWidget):
         start = min(n.start_s for n in notes)
         end   = max(n.end_s for n in notes)
         return (start, end)
+
+    def _set_active_layer(self, active_layer_id: str | None) -> None:
+        self.logger.info(f"_set_active_layer({active_layer_id})")
+        for lid, header in self._layer_headers.items():
+            header.setActive(lid == active_layer_id)
 
     def refreshLayerRange(self, layer_id: str):
         hdr = self._layer_headers.get(layer_id)
@@ -262,6 +275,7 @@ class NotesTree(QtWidgets.QTreeWidget):
         rng = self._compute_layer_range(layer_id)
         s = rng[0] if rng[0] is not None else 0.0
         e = rng[1] if rng[1] is not None else 0.0
+        self._set_active_layer(layer_id)
         self.groupActivated.emit(layer_id, s, e)
 
     def _emit_add_note(self, layer_id: str):
@@ -334,6 +348,7 @@ class NotesTree(QtWidgets.QTreeWidget):
                 if isinstance(w, NoteCard):
                     w.setSelected(False)
         QtWidgets.QTreeWidget.clearSelection(self)
+        self._set_active_layer(None)
 
     def firstLayerId(self) -> Optional[str]:
         if not self._layer_items:

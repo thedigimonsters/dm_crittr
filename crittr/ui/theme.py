@@ -4,6 +4,8 @@ from crittr.qt import QtGui, QtWidgets
 NOTE_RAIL_COLOR = QtGui.QColor("#32363c")
 GRIP_WIDTH_PX   = 8
 
+
+
 class Theme:
     bg          = QtGui.QColor("#1f2124")
     panel       = QtGui.QColor("#26292e")
@@ -16,7 +18,12 @@ class Theme:
     success     = QtGui.QColor("#4caf50")
     icon_idle   = QtGui.QColor("#bfc5cc")
     icon_hover  = QtGui.QColor("#e3e6ea")
-    danger      = QtGui.QColor("#e57373")  # for destructive menu items
+    danger      = QtGui.QColor("#e57373")
+
+    header_bg = QtGui.QColor("#26292e")  # default (panel_alt)
+    header_bg_hover = QtGui.QColor("#2c3036")  # +3–4% luminance
+    header_bg_active = QtGui.QColor("#2B323B")  # calm selected header
+
     chip_colors = [
         QtGui.QColor("#8ab4f8"),
         QtGui.QColor("#f28b82"),
